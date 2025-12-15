@@ -3,13 +3,17 @@ import {
   removeFromCart,
   updateDeliveryOption
 } from '../../data/cart.js';
-import { products } from '../../data/products.js';
+import { getProduct } from '../../data/products.js';
 import { formatCurrency } from '../utils/money.js';
 /* ESM version */
 // import { hello } from 'https://unpkg.com/supersimpledev@1.0.1/hello.esm.js';
 import dayjs from 'https://unpkg.com/supersimpledev@8.5.0/dayjs/esm/index.js';
 
-import { deliveryOptions } from '../../data/deliveryOptions.js';
+import {
+  deliveryOptions,
+  getDeliveryOption
+} from '../../data/deliveryOptions.js';
+import { renderPaymentSummary } from './paymentSummary.js';
 
 /* External Libraries */
 // hello();
@@ -31,25 +35,13 @@ export function renderOrderSummary() {
     const productId = cartItem.productId;
 
     /* 循环查找产品id，找到匹配对象 */
-    let matchingProduct;
-
-    products.forEach((product) => {
-      if (product.id === productId) {
-        matchingProduct = product;
-      }
-    });
-    // console.log(matchingProduct);
+    const matchingProduct = getProduct(productId);
 
     const deliveryOptionId = cartItem.deliveryOptionId;
 
     /* 根据id 来匹配deliveryOption */
-    let deliveryOption;
+    const deliveryOption = getDeliveryOption(deliveryOptionId);
 
-    deliveryOptions.forEach((option) => {
-      if (option.id === deliveryOptionId) {
-        deliveryOption = option;
-      }
-    });
     const today = dayjs();
     const deliveryDate = today.add(deliveryOption.deliveryDays, 'days');
     const dateString = deliveryDate.format('dddd, MMMM D');
@@ -143,7 +135,7 @@ export function renderOrderSummary() {
     return html;
   }
 
-  document.querySelector('.order-summary').innerHTML = cartSummaryHTML;
+  document.querySelector('.js-order-summary').innerHTML = cartSummaryHTML;
 
   /* MVC - *when we interact with the View it will run the Controller */
   document.querySelectorAll('.js-delete-link').forEach((link) => {
@@ -153,6 +145,7 @@ export function renderOrderSummary() {
       const productId = link.dataset.productId;
       // console.log(productId);
 
+      /* 1. update the data */
       removeFromCart(productId);
       // console.log(cart);
 
@@ -160,6 +153,9 @@ export function renderOrderSummary() {
         `.js-cart-item-container-${productId}`
       );
       container.remove();
+
+      /* 2. regenerate all the html */
+      renderPaymentSummary();
     });
   });
 
@@ -172,6 +168,7 @@ export function renderOrderSummary() {
 
       /* MVC - use the updated Model to regenerate the View */
       renderOrderSummary();
+      renderPaymentSummary();
     });
   });
 }
